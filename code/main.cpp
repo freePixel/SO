@@ -72,7 +72,7 @@ void menuChoiceReset()
 
 void menuChoiceInsert()
 {
-    int32_t nmec;
+    int32_t nmec = -1;
     char* line = NULL;
     size_t n = 0;
     fprintf(stdout , "Enter student information (number name): ");
@@ -83,9 +83,13 @@ void menuChoiceInsert()
         return;
     }
     char* name = new char[20];
+    *name = '\0';
     sscanf(line , "%d %[^\n]" , &nmec , name);
-
-    ull::insert(nmec , name);
+    if(nmec != -1 && name[0] != '\0')
+        ull::insert(nmec , name);
+    else{
+        fprintf(stderr , "Invalid name or nmec");
+    }
 
     delete name;
     delete line;
@@ -150,6 +154,32 @@ void menuChoicePrint()
 
 void menuChoiceLoad()
 {
+    char* line = NULL;
+    size_t n = 0;
+    fprintf(stdout , "Enter file name: ");
+    if(getline(&line , &n , stdin) == -1)
+    {
+        fprintf(stderr , "get line failed");
+        delete line;
+        return;
+    }
+
+    char* file_name = new char[strlen(line)-1];
+    strncpy(file_name , line , strlen(line) -1);
+
+
+    if(file_name != NULL)
+    {
+
+        ull::load(file_name);
+        delete line;
+        delete file_name;
+    }
+    else{
+        fprintf(stderr , "Input does not contain a file name!\n");
+    }
+    
+
 }
 
 /* ******************************************** */

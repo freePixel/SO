@@ -53,6 +53,39 @@ namespace ull
 
     void load(const char *fname)
     {
+        FILE* ptr = fopen(fname , "r");
+        if(ptr == NULL)
+        {
+            fprintf(stderr , "File can't be opened!");
+        }
+        else{
+            ssize_t read;
+            int lc = 1;
+            size_t len = 0;
+            char* line = NULL;
+            while((read = getline(&line,&len,ptr) != -1))
+            {
+                char* name = new char[50];
+                int32_t nmec;
+                
+                sscanf(line , "%[^;]; %d\n" , name , &nmec);
+                //fprintf(stderr , "{%s,%d}\n" , name , nmec);
+                if(name != NULL)
+                {
+                    insert(nmec , name);
+                    
+                }
+                else{
+                    fprintf(stderr , "Error reading file, line = %d\n" , lc);
+                }
+
+                delete name;
+            
+                lc++;
+            }
+            delete line;
+        }
+
     }
 
     /* ************************************************* */
