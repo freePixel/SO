@@ -165,7 +165,9 @@ namespace ull
 
     void remove(uint32_t nmec)
     {
-        //base case
+        //base cases
+        if(head == NULL) return;
+
         if(head->reg.nmec == nmec)
         {
             Node* temp = head->next;
@@ -181,20 +183,11 @@ namespace ull
         {
             if(ptr->next->reg.nmec == nmec)
             {
-                if(ptr->next->next != NULL)
-                {
-                    Node* temp = ptr->next->next;
-                    free((void*)ptr->next->reg.name);
-                    free(ptr->next);
-                    ptr->next = temp;
-                    return;
-                }
-                else{
-                    free((void*)ptr->next->reg.name);
-                    free(ptr->next);
-                    ptr->next = NULL;
-                    return;
-                }
+                Node* temp = ptr->next->next;
+                free((void*)ptr->next->reg.name);
+                free(ptr->next);
+                ptr->next = temp;
+                return;
             }
 
             ptr = ptr->next;
