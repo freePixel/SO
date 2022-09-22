@@ -35,6 +35,7 @@ static void printMenu(void)
            "| 4 --- remove student, through number          |\n"
            "| 5 --- print list in ascending order of number |\n"
            "| 6 --- load list of students from file         |\n"
+           "| 7 --- save list in a file                     |\n"
            "+===============================================+\n");
 }
 
@@ -184,6 +185,31 @@ void menuChoiceLoad()
 
 /* ******************************************** */
 
+void menuChoiseSave()
+{
+    char* line = NULL;
+    size_t n = 0;
+    fprintf(stdout , "Enter output file name: ");
+    if(getline(&line , &n , stdin) == -1)
+    {
+        fprintf(stderr , "get line failed");
+        delete line;
+        return;
+    }
+
+    char* file_name = new char[strlen(line)-1];
+    strncpy(file_name , line , strlen(line) -1);
+
+    if(file_name != NULL) ull::saveIntoFile(file_name);
+    else{
+        fprintf(stderr , "Error getting input!");
+    }
+    
+}
+
+
+/* ******************************************** */
+
 void getChoiceAndCallHandler()
 {
     /* ask for command */
@@ -228,6 +254,9 @@ void getChoiceAndCallHandler()
             break;
         case 6:
             menuChoiceLoad();
+            break;
+        case 7:
+            menuChoiseSave();
             break;
         default:
             fprintf(stderr, "Wrong action required (%u)\n", cmd);

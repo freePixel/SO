@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
-
+#include <math.h>
 
 #include "ull.h"
 
@@ -85,6 +85,7 @@ namespace ull
             }
             delete line;
         }
+        fclose(ptr);
 
     }
 
@@ -195,6 +196,37 @@ namespace ull
             ptr = ptr->next;
         }
     }
+
+    /* ************************************************* */
+
+    void saveIntoFile(const char* output_file)
+    {
+        Node* ptr = head;
+        FILE* file = fopen(output_file , "w");
+
+        if(file == NULL)
+        {
+            fprintf(stderr , "Error creating file, name= %s\n" , output_file);
+        }
+
+        while(ptr != NULL)
+        {
+            int nmec = ptr->reg.nmec;
+            const char* name = ptr->reg.name;
+            uint32_t size = floor(log10(abs(nmec))) + strlen(name) + 4;
+            char* output_str = new char[size];
+            sprintf(output_str , "%s;%d\n" , name , nmec);
+            fputs(output_str , file);
+            delete output_str;
+            ptr = ptr->next;
+        }
+
+        fclose(file);
+    }
+
+
+
+
 
     /* ************************************************* */
 

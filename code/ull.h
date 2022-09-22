@@ -70,6 +70,13 @@ namespace ull
      *  \param nmec The nmec associated to the register to be removed
      */
     void remove(uint32_t nmec);
+
+    /**
+     * \brief Save list data into a file.
+     * \param output_file The desired output file
+     * \return Returns EXIT_SUCESS or EXIT_FAILURE depending on save sucess.
+     */
+    void saveIntoFile(const char* output_file);
 }
 
 #endif /* __SO_IPC_ULL_ */
