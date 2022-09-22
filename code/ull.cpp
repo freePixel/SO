@@ -108,11 +108,15 @@ namespace ull
 
     void insert(uint32_t nmec, const char *name)
     {
-        if(head == NULL)
+        //edge cases
+        if(head == NULL || head->reg.nmec > nmec)
         {
+            Node* temp = NULL;
+            if(head != NULL && head->reg.nmec > nmec) temp = head;
             head = new Node();
             head->reg.nmec = nmec;
             head->reg.name = strdup(name);
+            head->next = temp;
             return;
         }
         Node* ptr = head;
