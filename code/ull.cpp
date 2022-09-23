@@ -166,7 +166,11 @@ namespace ull
     void remove(uint32_t nmec)
     {
         //base cases
-        if(head == NULL) return;
+        if(head == NULL)
+        {
+            fprintf(stderr , "Student with number %d not found!" , nmec);
+            return;
+        }
 
         if(head->reg.nmec == nmec)
         {
@@ -192,6 +196,8 @@ namespace ull
 
             ptr = ptr->next;
         }
+
+        fprintf(stderr , "Student with number %d not found!" , nmec);
     }
 
     /* ************************************************* */
