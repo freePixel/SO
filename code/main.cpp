@@ -171,14 +171,14 @@ void menuChoiceLoad()
 
     if(file_name != NULL)
     {
-
         ull::load(file_name);
-        delete line;
-        delete file_name;
     }
     else{
         fprintf(stderr , "Input does not contain a file name!\n");
     }
+
+    delete line;
+    delete file_name;
     
 
 }
@@ -204,6 +204,9 @@ void menuChoiseSave()
     else{
         fprintf(stderr , "Error getting input!");
     }
+
+    delete line;
+    delete file_name;
     
 }
 
