@@ -56,7 +56,7 @@ namespace ull
         FILE* ptr = fopen(fname , "r");
         if(ptr == NULL)
         {
-            fprintf(stderr , "File can't be opened!");
+            fprintf(stderr , "File named %s can't be opened!" , fname);
         }
         else{
             ssize_t read;
@@ -84,8 +84,8 @@ namespace ull
                 lc++;
             }
             delete line;
+            fclose(ptr);
         }
-        fclose(ptr);
 
     }
 
@@ -210,6 +210,7 @@ namespace ull
         if(file == NULL)
         {
             fprintf(stderr , "Error creating file, name= %s\n" , output_file);
+            return;
         }
 
         while(ptr != NULL)
