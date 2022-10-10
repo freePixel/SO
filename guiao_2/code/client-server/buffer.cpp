@@ -22,7 +22,7 @@ namespace Buffer
             {
                 _buffer.data[i+_buffer.length] = data[i];
             }
-            _buffer.length += length;
+            _buffer.length += length;            
         }
     }
 

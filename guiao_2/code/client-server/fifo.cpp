@@ -1,5 +1,5 @@
 #include "fifo.h"
-
+#include <stdexcept>
 namespace Fifo
 {
     #define N 10
@@ -25,14 +25,33 @@ namespace Fifo
 
     
 
-    void create(FIFO& _fifo)
+    FIFO* create()
     {
+        int fifoId = pshmget(IPC_PRIVATE , sizeof(FIFO) , 0600 | IPC_CREAT | IPC_EXCL);
+        FIFO* fifo = (FIFO*)pshmat(fifoId , NULL , 0);
+
+        for(uint32_t i = 0; i < 10 ; i++)
+            fifo->slot[i] = -1;
+
+        fifo->ii = 0;
+        fifo->ri = 0;
+        fifo->cnt = 0;
         
+        fifo->semid = psemget(IPC_PRIVATE, 3 , 0600 | IPC_CREAT | IPC_EXCL);
+
+        for(int i=0;i<10;i++)
+            up(fifo->semid , NSLOTS);
+
+        up(fifo->semid , NACCESS);
+
+        if(fifo == NULL) throw std::runtime_error("Error creating buffer");
+        return fifo;
     }
 
     void destroy(FIFO& _fifo)
     {
-        
+        pshmctl(_fifo.fifoId , IPC_RMID , NULL);
+        pshmdt(&_fifo);
     }
 
     void in(FIFO& _fifo , int value)

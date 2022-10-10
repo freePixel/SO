@@ -16,15 +16,16 @@ namespace Fifo
     struct FIFO
     {
 
-        const int semid;
+        int semid;
         uint32_t ii;
         uint32_t ri;
         uint32_t cnt;
         int slot[10];
+        int fifoId;
 
     };
 
-    void create(FIFO& _fifo);
+    FIFO* create();
     void destroy(FIFO& _fifo);
     void in(FIFO& _fifo , int value);
     void out(FIFO& _fifo , int& value);
