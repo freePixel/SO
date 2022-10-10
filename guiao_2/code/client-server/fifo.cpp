@@ -29,7 +29,7 @@ namespace Fifo
     {
         int fifoId = pshmget(IPC_PRIVATE , sizeof(FIFO) , 0600 | IPC_CREAT | IPC_EXCL);
         FIFO* fifo = (FIFO*)pshmat(fifoId , NULL , 0);
-
+        fifo->fifoId = fifoId;
         for(uint32_t i = 0; i < 10 ; i++)
             fifo->slot[i] = -1;
 
