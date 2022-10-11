@@ -18,11 +18,8 @@ namespace Buffer
             throw std::runtime_error("Buffer length exceeded");
         }
         else{
-            for(int i=0;i<length;i++)
-            {
-                _buffer.data[i+_buffer.length] = data[i];
-            }
-            _buffer.length += length;            
+            memcpy(&_buffer.data[_buffer.length] , data , length);  
+            _buffer.length += length;
         }
     }
 
@@ -34,11 +31,12 @@ namespace Buffer
 
     Buffer::BUFFER* create()
     {
-        int bufferId = pshmget(IPC_PRIVATE , sizeof(Buffer::BUFFER) , 0600 | IPC_CREAT | IPC_EXCL);
+        int bufferId = pshmget(IPC_PRIVATE , sizeof(BUFFER) , 0600 | IPC_CREAT | IPC_EXCL);
         BUFFER* buffer = (BUFFER*)pshmat(bufferId , NULL , 0);
-        buffer->semid = psemget(IPC_PRIVATE , 1 , 0600 | IPC_CREAT | IPC_EXCL);
-        
 
+        buffer->semid = psemget(IPC_PRIVATE , 1 , 0600 | IPC_CREAT | IPC_EXCL);
+
+        set_solved(*buffer);
 
         return buffer;
     }
@@ -59,7 +57,7 @@ namespace Buffer
 
     void destroy(Buffer::BUFFER& _buffer)
     {
-        pshmctl(_buffer.bufferId , IPC_RMID , NULL);
         pshmdt(&_buffer);
+        pshmctl(_buffer.bufferId , IPC_RMID , NULL);
     }
 }

@@ -24,8 +24,8 @@ const char* random_strings[] = {
 void produce_and_get_response()
 {
     Service::ServiceRequest sreq;
-    char* name = new char[9];
-    strcpy(name , "Jonh Doe");
+    char* name = (char*)malloc(sizeof(char) * 6);
+    memcpy(name ,random_strings[0] , 6);
     sreq.data = name;
     Service::operation op = Service::operation::letters;
     sreq.op = op;
@@ -33,13 +33,13 @@ void produce_and_get_response()
 
     Service::ServiceResponse response;
     Service::callService(sreq , response);
-    printf("Producer terminated\n");
+    printf("Server awnser: %c\n" , response.data[0]);
+
 }
 
 void consume()
 {
     Service::processService();
-    printf("Consumer terminated\n");
 }
 
 int main(int argc , char* argv[])
@@ -80,11 +80,13 @@ int main(int argc , char* argv[])
     for(unsigned int i=0;i<consumers;i++)
     {
         pwaitpid(cpid[i] , NULL , 0);
+        printf("Consumer %d terminated\n" , cpid[i]);
     }
 
     for(unsigned int i=0;i<producers;i++)
     {
         pwaitpid(ppid[i] , NULL , 0);
+        printf("Producer %d terminated\n" , ppid[i]);
     }
 
     Service::destroy();

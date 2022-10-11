@@ -20,7 +20,6 @@ namespace Service
 {
     #define N 10
 
-  
     static Buffer::BUFFER* pool[N];
     static Fifo::FIFO* freeBuffers;
     static Fifo::FIFO* pendingRequests;
@@ -61,7 +60,7 @@ namespace Service
                         letters++;
                 }
                 char* response = (char*)malloc(sizeof(char));
-                *response = (char)letters;
+                response[0] = (char)letters;
                 res.data = response;
                 res.size = 1;
         }
@@ -88,25 +87,31 @@ namespace Service
     {
         int id;
         Fifo::out(*freeBuffers , id); //take a buffer out of fifo of free buffers
-        Buffer::write(*pool[id] , (char*)req.op , sizeof(req.op));// put request data on buffer
-        Buffer::write(*pool[id] , res.data , res.size);
+        char op = (char)req.op;
+        Buffer::write(*pool[id] , &op , sizeof(char));// put request data on buffer
+        Buffer::write(*pool[id] , req.data , req.size);
         Fifo::in(*pendingRequests , id);//add buffer to fifo of pending requests
         Buffer::wait_until_solved(*pool[id]); //wait (blocked) until a response is available */
         res.data = (char*)malloc(sizeof(char) * pool[id]->length);
-        memcpy(res.data , pool[id]->data , pool[id]->length);
+        //memcpy(res.data , pool[id]->data , pool[id]->length);
         res.size = pool[id]->length;
+        Buffer::read(*pool[id] , res.data);
 
-        printf("Server response!");
+
+
     }
 
     void processService()
     {
         int id;
         Fifo::out(*pendingRequests , id); //get id
-        int op = (int)pool[id]->data[3];
+
         ServiceRequest req;
-        req.op = (operation)op;
-        req.data = pool[id]->data; //take the request
+        req.data = (char*)malloc((pool[id]->length) * sizeof(char));
+        Buffer::read(*pool[id] , req.data);
+
+        operation op = (operation)(int)(req.data[0]);
+        req.op = op;       
         ServiceResponse res;
         produceResponse(req , res); //produce response
         Buffer::clear(*pool[id]);
