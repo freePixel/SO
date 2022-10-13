@@ -21,19 +21,23 @@ const char* random_strings[] = {
     "desktop",
     "publishing"};
 
+Service::ServiceRequest get_random_request()
+{
+    Service::ServiceRequest request;
+    request.op = (Service::operation)(rand() % 2);
+    uint random_string_idx = rand() % (sizeof(random_strings) / sizeof(const char*));
+    uint str_size = sizeof(random_strings[random_string_idx]) / sizeof(const char);
+    request.data = (char*)malloc(sizeof(char) * str_size);
+    request.size = str_size;
+    return request;
+}
+
 void produce_and_get_response()
 {
-    Service::ServiceRequest sreq;
-    char* name = (char*)malloc(sizeof(char) * 6);
-    memcpy(name ,random_strings[0] , 6);
-    sreq.data = name;
-    Service::operation op = Service::operation::letters;
-    sreq.op = op;
-    sreq.size = 9;
-
+    Service::ServiceRequest sreq = get_random_request();
     Service::ServiceResponse response;
     Service::callService(sreq , response);
-    printf("Server awnser: %c\n" , response.data[0]);
+    printf("Server awnser: %d\n" , response.data[0]);
 
 }
 
