@@ -32,8 +32,9 @@ namespace Buffer
     Buffer::BUFFER* create()
     {
         int bufferId = pshmget(IPC_PRIVATE , sizeof(BUFFER) , 0600 | IPC_CREAT | IPC_EXCL);
-        BUFFER* buffer = (BUFFER*)pshmat(bufferId , NULL , 0);
 
+        BUFFER* buffer = (BUFFER*)pshmat(bufferId , NULL , 0);
+        buffer->bufferId = bufferId;
         buffer->semid = psemget(IPC_PRIVATE , 1 , 0600 | IPC_CREAT | IPC_EXCL);
 
         set_solved(*buffer);
@@ -57,7 +58,8 @@ namespace Buffer
 
     void destroy(Buffer::BUFFER& _buffer)
     {
+        int buffid = _buffer.bufferId;
         pshmdt(&_buffer);
-        pshmctl(_buffer.bufferId , IPC_RMID , NULL);
+        pshmctl(buffid , IPC_RMID , NULL);
     }
 }

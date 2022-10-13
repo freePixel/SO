@@ -89,7 +89,6 @@ namespace Service
         Fifo::in(*pendingRequests, id);       // add buffer to fifo of pending requests
         Buffer::wait_until_solved(*pool[id]); // wait (blocked) until a response is available */
         res.data = (char *)malloc(sizeof(char) * pool[id]->length);
-        // memcpy(res.data , pool[id]->data , pool[id]->length);
         res.size = pool[id]->length;
         Buffer::read(*pool[id], res.data);
     }
@@ -108,8 +107,10 @@ namespace Service
         req.op = op;
         ServiceResponse res;
         produceResponse(req, res); // produce response
+        free(req.data);
         Buffer::clear(*pool[id]);
         Buffer::write(*pool[id], res.data, res.size);
+        free(res.data);
         Buffer::set_solved(*pool[id]);
     }
 }
