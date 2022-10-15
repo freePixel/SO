@@ -11,6 +11,8 @@
 #include <stdint.h>
 
 #include "process.h"
+#include "thread.h"
+#include "dbc.h"
 
 namespace Buffer
 {
@@ -18,8 +20,8 @@ namespace Buffer
     {
         int length;
         char data[BSIZE];
-        int semid;
-        int bufferId;
+        pthread_cond_t solved;
+        pthread_mutex_t accessCR;
     };
     BUFFER* create();
     void destroy(BUFFER& _buffer);

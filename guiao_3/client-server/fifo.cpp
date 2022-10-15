@@ -6,8 +6,12 @@ namespace Fifo
 
     FIFO* create()
     {
-        FIFO* fifo = (FIFO*)malloc(sizeof(fifo));
+        FIFO* fifo = (FIFO*)malloc(sizeof(FIFO));
         
+        fifo->fifoNotFull = PTHREAD_COND_INITIALIZER;
+        fifo->fifoNotEmpty = PTHREAD_COND_INITIALIZER;
+        fifo->accessCR = PTHREAD_MUTEX_INITIALIZER;
+
         if(fifo == NULL)
         {
             perror("Fail creating fifo");
@@ -26,11 +30,7 @@ namespace Fifo
 
     void destroy(FIFO& _fifo)
     {
-        require(&_fifo != NULL , "fifo must exist");
-        if(&_fifo != NULL)
-        {
-            free(&_fifo);
-        }
+        free(&_fifo);
     }
 
     static bool isFull(FIFO& _fifo)
@@ -74,7 +74,6 @@ namespace Fifo
 
         cond_broadcast(&_fifo.fifoNotFull);
         mutex_unlock(&_fifo.accessCR);
-        
     }
 
     

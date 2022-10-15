@@ -24,9 +24,9 @@ namespace Fifo
         int slot[10];
         int fifoId;
 
-        pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
-        pthread_cond_t fifoNotFull = PTHREAD_COND_INITIALIZER;
-        pthread_cond_t fifoNotEmpty = PTHREAD_COND_INITIALIZER;
+        pthread_mutex_t accessCR;
+        pthread_cond_t fifoNotFull;
+        pthread_cond_t fifoNotEmpty;
 
     };
 

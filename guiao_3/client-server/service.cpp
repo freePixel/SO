@@ -102,7 +102,7 @@ namespace Service
         req.data = (char *)malloc((pool[id]->length) * sizeof(char));
         req.size = (pool[id]->length) * sizeof(char);
         Buffer::read(*pool[id], req.data);
-        
+
         operation op = (operation)(int)(req.data[0]);
         req.op = op;
         ServiceResponse res;

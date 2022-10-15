@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include<ctime>
+#include  "thread.h"
 
 const char* random_strings[] = {
     "Lorem",
@@ -35,37 +36,78 @@ Service::ServiceRequest get_random_request()
     return request;
 }
 
-void produce_and_get_response()
+void* produce_and_get_response(void* parg)
 {
-    srand(getpid());
+    srand(gettid());
     Service::ServiceRequest sreq = get_random_request();
     if(sreq.op == Service::operation::letters)
-        printf("Client query (proccess %d): operation = letters , text = %s\n" , getpid() ,sreq.data);
+        printf("Client query (thread id %d): operation = letters , text = %s\n" , gettid() ,sreq.data);
     else if(Service::operation::digits){
-        printf("Client query: operation = digits , text = %s\n" , sreq.data);
+        printf("Client query (thread id %d): operation = digits  , text = %s\n" , gettid() ,sreq.data);
     }
     Service::ServiceResponse response;
     Service::callService(sreq , response);
-    printf("Server awnser (process %d): %d\n" , getpid() ,response.data[0]);
+    printf("Server awnser (thread id %d): %d\n" , gettid() ,response.data[0]);
     free(sreq.data);
     free(response.data);
+    return NULL;
     
 }
 
-void consume()
+void* consume(void *argp)
 {
     Service::processService();
+    return NULL;
 }
+
+struct ARGV
+{
+    uint id;
+    uint niter;
+};
 
 int main(int argc , char* argv[])
 {
-
+    uint niter = 1;
+    uint nthr = 4;
+    
     Service::create();
+    
 
+    pthread_t cthr[nthr];
+    ARGV carg[nthr];
+    printf("Launching %d consumer threads, each performing %d iterations\n" , nthr , niter);
+    for(uint i=0;i<nthr;i++)
+    {
+        carg[i].id = i;
+        carg[i].niter = niter;
+        thread_create(&cthr[i] , NULL , consume , &carg[i]);
+    }
 
+    pthread_t pthr[nthr];
+    ARGV parg[nthr];
+    printf("Launchind %d producer threads, each performing %d iterations\n" , nthr , niter);
+    for(uint i=0;i<nthr;i++)
+    {
+        parg[i].id = i;
+        parg[i].niter = niter;
+        thread_create(&pthr[i] , NULL , produce_and_get_response , &parg[i]);
+    }
+
+    for(uint i=0;i<nthr;i++)
+    {
+        thread_join(pthr[i] , NULL);
+        printf("Producer thread %d has terminated\n" , i);
+    }
+
+    for(uint i=0;i<nthr;i++)
+    {
+        thread_join(cthr[i] , NULL);
+        printf("Consumer thread %d has terminated\n" , i);
+    }
 
     Service::destroy();
-
+    
     return EXIT_SUCCESS;
 
 }
