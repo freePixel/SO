@@ -56,7 +56,9 @@ void* produce_and_get_response(void* parg)
 
 void* consume(void *argp)
 {
+    printf("Consuming (thread id %d)\n" , gettid());
     Service::processService();
+    printf("thread id %d successfully consumed\n" , gettid());
     return NULL;
 }
 

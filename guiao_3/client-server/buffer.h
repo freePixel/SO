@@ -21,6 +21,7 @@ namespace Buffer
         int length;
         char data[BSIZE];
         pthread_cond_t solved;
+        bool _solved;
         pthread_mutex_t accessCR;
     };
     BUFFER* create();

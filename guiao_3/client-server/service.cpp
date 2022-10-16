@@ -82,6 +82,7 @@ namespace Service
     void callService(ServiceRequest &req, ServiceResponse &res)
     {
         int id;
+
         Fifo::out(*freeBuffers, id); // take a buffer out of fifo of free buffers
         char op = (char)req.op;
         Buffer::write(*pool[id], &op, sizeof(char)); // put request data on buffer

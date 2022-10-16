@@ -8,7 +8,9 @@ namespace Buffer
 {
     void clear(BUFFER& _buffer)
     {
+        mutex_lock(&_buffer.accessCR);
         _buffer.length = 0;
+        mutex_unlock(&_buffer.accessCR);
     }
 
     void write(BUFFER& _buffer , char data[] , int length)
@@ -31,7 +33,7 @@ namespace Buffer
     {
         mutex_lock(&_buffer.accessCR);
         memcpy(dest , _buffer.data , _buffer.length);
-        clear(_buffer);
+        _buffer.length = 0;
         mutex_unlock(&_buffer.accessCR);
     }
 
@@ -40,17 +42,24 @@ namespace Buffer
         BUFFER* buffer = new BUFFER;
         buffer->accessCR = PTHREAD_MUTEX_INITIALIZER;
         buffer->solved = PTHREAD_COND_INITIALIZER;
+        buffer->_solved = false;
         return buffer;
     }
 
     void wait_until_solved(BUFFER& _buffer)
     {
-        cond_wait(&_buffer.solved , &_buffer.accessCR);
+        mutex_lock(&_buffer.accessCR);
+        if(!_buffer._solved)
+            cond_wait(&_buffer.solved , &_buffer.accessCR);
+        mutex_unlock(&_buffer.accessCR);
     }
 
     void set_solved(BUFFER& _buffer)
     {
+        mutex_lock(&_buffer.accessCR);
         cond_broadcast(&_buffer.solved);
+        _buffer._solved = true;
+        mutex_unlock(&_buffer.accessCR);
     }
 
     void destroy(Buffer::BUFFER& _buffer)
