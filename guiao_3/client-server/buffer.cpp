@@ -49,7 +49,7 @@ namespace Buffer
     void wait_until_solved(BUFFER& _buffer)
     {
         mutex_lock(&_buffer.accessCR);
-        if(!_buffer._solved)
+        while(!_buffer._solved)
             cond_wait(&_buffer.solved , &_buffer.accessCR);
         mutex_unlock(&_buffer.accessCR);
     }
