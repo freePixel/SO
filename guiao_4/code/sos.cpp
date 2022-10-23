@@ -129,7 +129,7 @@ namespace sos
     /* -------------------------------------------------------------------- */
 
     /* Free all allocated synchronization resources and data structures */
-    void destroy()
+    void close()
     {
         require(sharedArea != NULL, "sharea area must be allocated");
 
@@ -248,7 +248,7 @@ namespace sos
         require(token < NBUFFERS, "token is not valid");
 
         mutex_lock(&sharedArea->bufferAccess);
-        cond_wait(&sharedArea->awnsered[token] , &sharedArea->bufferAccess);
+        cond_signal(&sharedArea->awnsered[token]);
         mutex_unlock(&sharedArea->bufferAccess);
         
 

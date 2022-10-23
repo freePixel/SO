@@ -256,6 +256,7 @@ int main(int argc, char *argv[])
         thread_cancel(server_threads[i]);
     }
 
+    sos::close();
     /* quitting */
     return EXIT_SUCCESS;
 }
