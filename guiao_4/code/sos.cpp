@@ -6,6 +6,8 @@
  * \author (2022) Miguel Oliveira e Silva <mos at ua.pt>
  */
 
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,10 +21,7 @@
 
 #include "dbc.h"
 
-/*
- * TODO point
- * Uncomment the #include that applies
- */
+
 #include "process.h"
 #include "thread.h"
 
@@ -62,16 +61,12 @@ namespace sos
         /* A fifo for tokens of free buffers and another for tokens with pending requests */
         FIFO fifo[2];
 
-        /*
-         * TODO point
-         * Declare here all you need to accomplish the synchronization,
-         * semaphores (for implementation using processes) or
-         * mutexes, conditions and condition variables (for implementation using threads)
-         */
-        pthread_mutex_t bufferAccess[NBUFFERS];
+
+        pthread_mutex_t bufferAccess;
         pthread_mutex_t fifoAcess[2];
         pthread_cond_t fifoNotEmpty[2];
         pthread_cond_t fifoNotFull[2];
+        pthread_cond_t awnsered[NBUFFERS];
     };
 
     /** \brief pointer to shared area dynamically allocated */
@@ -85,16 +80,12 @@ namespace sos
      */
     void open(void)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s()\n", __FUNCTION__);
 #endif
 
         require(sharedArea == NULL, "Shared area must not exist");
 
-        /* 
-         * TODO point
-         * Allocate the shared memory
-         */
         sharedArea = new SharedArea();
 
         /* init fifo 0 (free buffers) */
@@ -115,20 +106,22 @@ namespace sos
         fifo->ii = fifo->ri = 0;
         fifo->cnt = 0;
 
-        /* 
-         * TODO point
-         * Init synchronization elements
-         */
-
+        
+        sharedArea->bufferAccess = PTHREAD_MUTEX_INITIALIZER;
 
         for(uint32_t i=0;i< NBUFFERS; i++)
-                sharedArea->bufferAccess[i] = PTHREAD_MUTEX_INITIALIZER;
+        {
+
+                sharedArea->awnsered[i] = PTHREAD_COND_INITIALIZER;
+        }
         for(uint32_t i=0;i<2;i++)
         {
                 sharedArea->fifoAcess[i] = PTHREAD_MUTEX_INITIALIZER;
                 sharedArea->fifoNotEmpty[i] = PTHREAD_COND_INITIALIZER;
                 sharedArea->fifoNotFull[i] = PTHREAD_COND_INITIALIZER;
         }
+
+
         
         
     }
@@ -140,17 +133,7 @@ namespace sos
     {
         require(sharedArea != NULL, "sharea area must be allocated");
 
-        /* 
-         * TODO point
-         * Destroy synchronization elements
-         */
-
-
-        /* 
-         * TODO point
-        *  Destroy the shared memory
-        */
-       delete sharedArea;
+        delete sharedArea;
 
         /* nullify */
         sharedArea = NULL;
@@ -162,25 +145,20 @@ namespace sos
     /* Insertion a token into a fifo */
     static void fifoIn(uint32_t idx, uint32_t token)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(idx: %u, token: %u)\n", __FUNCTION__, idx, token);
 #endif
 
         require(idx == FREE_BUFFER or idx == PENDING_REQUEST, "idx is not valid");
         require(token < NBUFFERS, "token is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         * avoiding race conditions and busy waiting
-         */
         mutex_lock(&sharedArea->fifoAcess[idx]);
 
         while(sharedArea->fifo[idx].cnt == NBUFFERS)
                 cond_wait(&sharedArea->fifoNotFull[idx] , &sharedArea->fifoAcess[idx]);
 
-        sharedArea->fifo[idx].ii = (sharedArea->fifo[idx].ii + 1) % NBUFFERS;
         sharedArea->fifo[idx].tokens[sharedArea->fifo[idx].ii] = token;
+        sharedArea->fifo[idx].ii = (sharedArea->fifo[idx].ii + 1) % NBUFFERS;
         sharedArea->fifo[idx].cnt++;
 
         cond_broadcast(&sharedArea->fifoNotEmpty[idx]);
@@ -194,17 +172,13 @@ namespace sos
 
     static uint32_t fifoOut(uint32_t idx)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(idx: %u)\n", __FUNCTION__, idx);
 #endif
 
         require(idx == FREE_BUFFER or idx == PENDING_REQUEST, "idx is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         * avoiding race conditions and busy waiting
-         */
+
 
         mutex_lock(&sharedArea->fifoAcess[idx]);
 
@@ -212,8 +186,8 @@ namespace sos
                 cond_wait(&sharedArea->fifoNotEmpty[idx] , &sharedArea->fifoAcess[idx]);
 
         uint32_t ret_val = sharedArea->fifo[idx].tokens[sharedArea->fifo[idx].ri];
-        sharedArea->fifo[idx].cnt--;
         sharedArea->fifo[idx].ri = (sharedArea->fifo[idx].ri + 1) % NBUFFERS;
+        sharedArea->fifo[idx].cnt--;
         cond_broadcast(&sharedArea->fifoNotFull[idx]);
         mutex_unlock(&sharedArea->fifoAcess[idx]);
         return ret_val;
@@ -224,106 +198,96 @@ namespace sos
 
     uint32_t getFreeBuffer()
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s()\n", __FUNCTION__);
 #endif
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
-        pthread_mutex_lock(&sharedArea->fifoAcess[FREE_BUFFER]);
-
-        while(sharedArea->fifo[FREE_BUFFER].cnt == 0)
-                pthread_cond_wait(&sharedArea->fifoNotEmpty[FREE_BUFFER] , &sharedArea->fifoAcess[FREE_BUFFER]);
-        
-
-        uint32_t free_buffer = fifoOut(0);
-        pthread_mutex_unlock(&sharedArea->fifoAcess[FREE_BUFFER]);
-        return free_buffer;
+ 
+        return fifoOut(FREE_BUFFER);
     }
 
     /* -------------------------------------------------------------------- */
 
     void putRequestData(uint32_t token, const char *data)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u, ...)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
         require(data != NULL, "data pointer can not be NULL");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+
+        mutex_lock(&sharedArea->bufferAccess);
+        memcpy(&sharedArea->pool[token] , data , strlen(data) + 1);
+        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */
 
     void submitRequest(uint32_t token)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+
+        fifoIn(PENDING_REQUEST , token);
     }
 
     /* -------------------------------------------------------------------- */
 
     void waitForResponse(uint32_t token)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         * avoiding race conditions and busy waiting
-         */
-    }
+        mutex_lock(&sharedArea->bufferAccess);
+        cond_wait(&sharedArea->awnsered[token] , &sharedArea->bufferAccess);
+        mutex_unlock(&sharedArea->bufferAccess);
+        
 
+    }
     /* -------------------------------------------------------------------- */
 
     void getResponseData(uint32_t token, Response *resp)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u, ...)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
         require(resp != NULL, "resp pointer can not be NULL");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+
+        mutex_lock(&sharedArea->bufferAccess);
+        resp->noChars = sharedArea->pool[token].resp.noChars;
+        resp->noDigits = sharedArea->pool[token].resp.noDigits;
+        resp->noLetters = sharedArea->pool[token].resp.noLetters;
+        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */
 
     void releaseBuffer(uint32_t token)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+
+        mutex_lock(&sharedArea->bufferAccess);
+        memset(sharedArea->pool[token].req , '\0' , sizeof(sharedArea->pool[token]));
+        mutex_unlock(&sharedArea->bufferAccess);
+        fifoIn(FREE_BUFFER, token);
+
     }
 
     /* -------------------------------------------------------------------- */
@@ -331,65 +295,61 @@ namespace sos
 
     uint32_t getPendingRequest()
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s()\n", __FUNCTION__);
 #endif
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+        return fifoOut(PENDING_REQUEST);
     }
 
     /* -------------------------------------------------------------------- */
 
     void getRequestData(uint32_t token, char *data)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u, ...)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
         require(data != NULL, "data pointer can not be NULL");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+
+        mutex_lock(&sharedArea->bufferAccess);
+        memcpy(data , &sharedArea->pool[token] , strlen(sharedArea->pool[token].req) + 1);
+        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */
 
     void putResponseData(uint32_t token, Response *resp)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u, ...)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
         require(resp != NULL, "resp pointer can not be NULL");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         */
+        mutex_lock(&sharedArea->bufferAccess);
+        sharedArea->pool[token].resp.noChars = resp->noChars;
+        sharedArea->pool[token].resp.noDigits = resp->noDigits;
+        sharedArea->pool[token].resp.noLetters = resp->noLetters;
+        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */
 
     void notifyClient(uint32_t token)
     {
-#if __DEBUG__
+#ifdef __DEBUG__
         fprintf(stderr, "%s(token: %u)\n", __FUNCTION__, token);
 #endif
 
         require(token < NBUFFERS, "token is not valid");
 
-        /* 
-         * TODO point
-         * Replace with your code, 
-         * avoiding race conditions and busy waiting
-         */
+        mutex_lock(&sharedArea->bufferAccess);
+        cond_broadcast(&sharedArea->awnsered[token]);
+        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */

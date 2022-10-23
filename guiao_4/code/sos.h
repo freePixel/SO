@@ -9,6 +9,10 @@
 #ifndef __SO_IPC_SOS_
 #define __SO_IPC_SOS_
 
+#ifndef __DEBUG__
+#define __DEBUG__
+#endif
+
 #include <stdint.h>
 
 namespace sos

@@ -20,12 +20,9 @@
 
 #include  "sos.h"
 
-/*
- * TODO point
- * Uncomment the #include that applies
- */
-//#include  "thread.h"
-//#include  "process.h"
+
+#include  "thread.h"
+#include  "process.h"
 #include  "utils.h"
 #include  "dbc.h"
 
@@ -73,13 +70,6 @@ fprintf(stderr, "%s(id: %u)\n", __FUNCTION__, id);
 /* ******************************************************* */
 /* The server life cycle */
 
-/*
- * Possible TODO point
- * This function does not have the signature required by the pthread_create function.
- * Be aware of that if you are implementing concurrency using threads.
- * Do not change this server function. 
- * If you need it to have a different signature, create a wrapper function that calls this one.
- */
 
 void server(uint32_t id)
 {
@@ -92,6 +82,12 @@ fprintf(stderr, "%s(id: %u)\n", __FUNCTION__, id);
     {
         processRequest(id);
     }
+}
+
+void* server(void* argv)
+{
+    server(((ARGV*)argv)->id);
+    return NULL;
 }
 
 /* ******************************************************* */
@@ -138,13 +134,6 @@ fprintf(stderr, "%s(id: %u, req: \"%s\", ...)\n", __FUNCTION__, id, req);
 /* ******************************************************* */
 /* The client life cycle */
 
-/* 
- * Possible TODO point
- * This function does not have the signature required by the pthread_create function.
- * Be aware of that if you are implementing concurrency using threads.
- * Do not change this client function. 
- * If you need it to have a different signature, create a wrapper function that calls this one.
- */
 
 void client(uint32_t id, uint32_t niter)
 {
@@ -165,6 +154,13 @@ fprintf(stderr, "%s(id: %u, niter: %u, ...)\n", __FUNCTION__, id, niter);
         printf("\e[32;01m| %-50s | %02u,%02u,%02u | %02u |\e[0m\n", 
                 req, resp.noChars, resp.noDigits, resp.noLetters, id);
     }
+}
+
+void* client(void* argv)
+{
+    ARGV* _argv = (ARGV*)argv;
+    client(_argv->id , _argv->niter);
+    return NULL;
 }
 
 /* ******************************************************* */
@@ -224,34 +220,41 @@ int main(int argc, char *argv[])
 
     /* launching the servers */
 
-    /* 
-     * TODO point
-     * Replace this comment with your code to launch the servers' processes/threads
-     */
+
+    pthread_t server_threads[nservers];
+    ARGV server_args[nservers];
+    for(uint32_t i=0;i<nservers;i++)
+    {
+        server_args[i].id = i;
+        thread_create(&server_threads[i] , NULL , server , &server_args[i]);
+    }
 
     /* launching the clients */
 
-    /* 
-     * TODO point 
-     * Replace this comment with your code to launch the clients' processes/threads 
-     */
+    pthread_t client_threads[nclients];
+    ARGV client_args[nclients];
+    for(uint32_t i=0;i<nclients;i++)
+    {
+        client_args[i].id = i;
+        client_args[i].niter = niter;
+        thread_create(&client_threads[i] , NULL , client , &client_args[i]);
+    }
 
     /* waiting for client to conclude */
 
-    /* 
-     * TODO point
-     * Replace this comment with your code to wait for clients termination
-     */
+    for(uint32_t i=0;i<nclients;i++)
+    {
+        
+        thread_join(client_threads[i] , NULL);
+        fprintf(stdout , "thread join ... [%d]\n" , i);
+    }
 
     /* waiting for servers to conclude */
 
-    /* 
-     * TODO point
-     * Replace this comment with your code to wait for servers termination.
-     * Be aware that the servers are in a infinite loop processing requests.
-     * So, they must be informed to finish their job.
-     * This can be done sending to every one of them an empty request string.
-     */
+    for(uint32_t i=0;i<nservers;i++)
+    {
+        thread_cancel(server_threads[i]);
+    }
 
     /* quitting */
     return EXIT_SUCCESS;

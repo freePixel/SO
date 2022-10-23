@@ -7,10 +7,12 @@ TARGETS = main
 
 all:	$(TARGETS)
 
-main:	main.o sos.o utils.o
+main:	main.o sos.o utils.o thread.o
 		g++ -o $@ $^ $(LDFLAGS)
 
 sos.o:	sos.h dbc.h utils.h
+
+thread.o : thread.h
 
 utils.o:	utils.h dbc.h
 
