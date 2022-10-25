@@ -67,6 +67,7 @@ namespace sos
         pthread_cond_t fifoNotEmpty[2];
         pthread_cond_t fifoNotFull[2];
         pthread_cond_t awnsered[NBUFFERS];
+        bool _awnsered[NBUFFERS];
     };
 
     /** \brief pointer to shared area dynamically allocated */
@@ -113,6 +114,7 @@ namespace sos
         {
 
                 sharedArea->awnsered[i] = PTHREAD_COND_INITIALIZER;
+                sharedArea->_awnsered[i] = false;
         }
         for(uint32_t i=0;i<2;i++)
         {
@@ -219,7 +221,7 @@ namespace sos
 
 
         mutex_lock(&sharedArea->bufferAccess);
-        memcpy(&sharedArea->pool[token] , data , strlen(data) + 1);
+        memcpy(&sharedArea->pool[token].req , data , (size_t)(MAX_STRING_LEN + 1));
         mutex_unlock(&sharedArea->bufferAccess);
     }
 
@@ -247,10 +249,10 @@ namespace sos
 
         require(token < NBUFFERS, "token is not valid");
 
-        mutex_lock(&sharedArea->bufferAccess);
-        cond_signal(&sharedArea->awnsered[token]);
-        mutex_unlock(&sharedArea->bufferAccess);
-        
+        while(sharedArea->_awnsered[token] == false)
+        {
+                cond_signal(&sharedArea->awnsered[token]);
+        }
 
     }
     /* -------------------------------------------------------------------- */
@@ -284,7 +286,8 @@ namespace sos
 
 
         mutex_lock(&sharedArea->bufferAccess);
-        memset(sharedArea->pool[token].req , '\0' , sizeof(sharedArea->pool[token]));
+        memset(sharedArea->pool[token].req , '\0' , MAX_STRING_LEN + 1);
+        sharedArea->_awnsered[token] = false;
         mutex_unlock(&sharedArea->bufferAccess);
         fifoIn(FREE_BUFFER, token);
 
@@ -315,7 +318,7 @@ namespace sos
 
 
         mutex_lock(&sharedArea->bufferAccess);
-        memcpy(data , &sharedArea->pool[token] , strlen(sharedArea->pool[token].req) + 1);
+        memcpy(data , &sharedArea->pool[token].req , (size_t)(MAX_STRING_LEN + 1));
         mutex_unlock(&sharedArea->bufferAccess);
     }
 
@@ -334,6 +337,7 @@ namespace sos
         sharedArea->pool[token].resp.noChars = resp->noChars;
         sharedArea->pool[token].resp.noDigits = resp->noDigits;
         sharedArea->pool[token].resp.noLetters = resp->noLetters;
+        sharedArea->_awnsered[token] = true;
         mutex_unlock(&sharedArea->bufferAccess);
     }
 
@@ -346,10 +350,7 @@ namespace sos
 #endif
 
         require(token < NBUFFERS, "token is not valid");
-
-        mutex_lock(&sharedArea->bufferAccess);
         cond_broadcast(&sharedArea->awnsered[token]);
-        mutex_unlock(&sharedArea->bufferAccess);
     }
 
     /* -------------------------------------------------------------------- */
